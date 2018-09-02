@@ -4,7 +4,6 @@ import {HashUtils} from '../utils/hash.utils';
 export class BlockFactory {
 
     constructor(private hashUtils: HashUtils) {
-        this.hashUtils = hashUtils;
     }
 
     createGenesisBlock(): Block{

@@ -2,19 +2,19 @@ import * as WebSocket from 'ws';
 import {WebsocketHandler} from './websocket.handler';
 import {WsMessage} from './websocket-message.interface';
 import {WsType} from './websocket.constant';
+import {StateManager} from '../state/state-manager';
 
-class WebsocketService {
+export class WebsocketService {
 
-    constructor(private wsHandler: WebsocketHandler) {}
-
-    sockets: WebSocket[] = [];
+    constructor(private wsHandler: WebsocketHandler, private stateManager: StateManager) {}
 
     connectToPeers(newPeers): WebSocket[] {
         return newPeers.map((peer) => {
             const ws = new WebSocket(peer);
             ws.on('open', () => {
                 const closeWs = (ws) => {
-                    this.sockets = this.closeConnection(ws, this.sockets);
+                    const sockets = this.closeConnection(ws, this.stateManager.getSockets());
+                    this.updateSocketState(sockets);
                 };
                 ws.on('close', () => closeWs(ws));
                 ws.on('error', () => closeWs(ws));
@@ -29,8 +29,8 @@ class WebsocketService {
                    this.write(ws, responseMessage);
                }
             });
+            this.updateSocketState(this.stateManager.getSockets().concat([ws]));
 
-            this.sockets = this.sockets.concat([ws]);
         });
     };
 
@@ -39,9 +39,10 @@ class WebsocketService {
         return sockets.filter(s => s !== ws);
     };
 
+    private updateSocketState(sockets: WebSocket[]): void {
+        this.stateManager.setSockets(sockets);
+    }
+
     write (ws: WebSocket, message: WsMessage) {ws.send(JSON.stringify(message))};
     broadcast (message: any, sockets: WebSocket[]) {sockets.forEach(socket => this.write(socket, message))};
 }
-
-const wsService = new WebsocketService(new WebsocketHandler());
-export default wsService;

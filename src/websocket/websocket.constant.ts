@@ -1,4 +1,5 @@
 export enum WsType {
     GET_ALL_BLOCKCHAIN = "getAllBlockChain",
-    GET_LATEST_BLOCK = "getLatestBlock"
+    GET_LATEST_BLOCK = "getLatestBlock",
+    PROCESS_BLOCKCHAIN = "processBlockChain"
 }
