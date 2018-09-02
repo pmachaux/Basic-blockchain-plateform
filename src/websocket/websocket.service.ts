@@ -6,7 +6,11 @@ import {StateManager} from '../state/state-manager';
 
 export class WebsocketService {
 
-    constructor(private wsHandler: WebsocketHandler, private stateManager: StateManager) {}
+    constructor(private wsHandler: WebsocketHandler, private stateManager: StateManager) {
+        this.stateManager.onBlockChainChange().subscribe(blocks => {
+            // Todo implement
+        });
+    }
 
     connectToPeers(newPeers): WebSocket[] {
         return newPeers.map((peer) => {

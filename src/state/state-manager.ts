@@ -1,5 +1,7 @@
 import {Block} from '../blockchain/models/block.model';
 import * as WebSocket from 'ws';
+import {Observable} from 'rxjs/internal/Observable';
+import {Subject} from 'rxjs/internal/Subject';
 
 const state: {
     blockchain: Block[],
@@ -8,6 +10,8 @@ const state: {
     blockchain: null,
     sockets: []
 };
+
+const blockchainSubject: Subject<Block[]>= new Subject<Block[]>();
 
 export class StateManager {
 
@@ -25,6 +29,11 @@ export class StateManager {
 
     setBlockChain(data: Block[]): void {
         state.blockchain = data;
+        blockchainSubject.next(data);
+    }
+
+    onBlockChainChange(): Subject<Block[]> {
+        return blockchainSubject;
     }
 }
 
