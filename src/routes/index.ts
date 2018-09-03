@@ -1,14 +1,14 @@
-import {BlockFactory} from "../blockchain/factories/block.factory";
-import {HashUtils} from "../blockchain/utils/hash.utils";
-import {BlockValidityUtils} from '../blockchain/utils/block-validity.utils';
-
+import {blockchainHandler} from '../app-injectors';
+import {websockethandler} from '../app-injectors';
 const express = require('express');
 const router = express.Router();
 
+// Blockchain handler
+router.get('/mineBlock', blockchainHandler.mineBlock);
+router.get('/blocks', blockchainHandler.getBlockChain);
 
-
-router.get('/', function(req, res, next) {
-
-});
+//Websocket Handler
+router.post('/addPeers', websockethandler.addPeer);
+router.get('/peers', websockethandler.getPeers);
 
 module.exports = router;

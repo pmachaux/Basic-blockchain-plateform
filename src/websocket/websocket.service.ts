@@ -1,14 +1,34 @@
 import * as WebSocket from 'ws';
-import {WebsocketHandler} from './websocket.handler';
+import {WebsocketMessageHandler} from './websocket-message.handler';
 import {WsMessage} from './websocket-message.interface';
-import {WsType} from './websocket.constant';
+import {WsDestination, WsType} from './websocket.constant';
 import {StateManager} from '../state/state-manager';
 
 export class WebsocketService {
 
-    constructor(private wsHandler: WebsocketHandler, private stateManager: StateManager) {
+    constructor(private wsHandler: WebsocketMessageHandler, private stateManager: StateManager) {
+        this.initService();
+    }
+
+    private initService() {
         this.stateManager.onBlockChainChange().subscribe(blocks => {
-            // Todo implement
+            const lastBlock = blocks.reverse()[0];
+            this.broadcast({
+                type: WsType.PROCESS_BLOCKCHAIN,
+                data: lastBlock
+            }, this.stateManager.getSockets())
+        });
+    }
+
+    initP2PConnection(port: number) {
+        const server = new WebSocket.Server({port});
+        server.on('connection', (ws: WebSocket) => {
+            ws.on('error', () => {
+                console.log('Connection error')
+            });
+            ws.on('message', (message: WsMessage) => {
+                this.onMessage(ws, message);
+            });
         });
     }
 
@@ -24,12 +44,6 @@ export class WebsocketService {
                 ws.on('error', () => closeWs(ws));
                 this.write(ws, {type: WsType.GET_ALL_BLOCKCHAIN});
             });
-            ws.on('error', () => {
-                console.log('Connection error')
-            });
-            ws.on('message', (message: WsMessage) => {
-                this.onMessage(ws, message);
-            });
             this.updateSocketState(this.stateManager.getSockets().concat([ws]));
 
         });
@@ -37,8 +51,10 @@ export class WebsocketService {
 
     private async onMessage(ws: WebSocket, message: WsMessage) {
         const responseMessage = await this.wsHandler.handleWsMessage(message);
-        if (responseMessage) {
-            this.write(ws, responseMessage);
+        if (responseMessage && responseMessage.dest === WsDestination.SINGLE) {
+            this.write(ws, {type: responseMessage.type, data: responseMessage.data });
+        } else if (responseMessage && responseMessage.dest === WsDestination.ALL) {
+            this.broadcast( {type: responseMessage.type, data: responseMessage.data }, this.stateManager.getSockets())
         }
     }
 
@@ -51,6 +67,12 @@ export class WebsocketService {
         this.stateManager.setSockets(sockets);
     }
 
+    getPeers(): string[] {
+        return this.stateManager.getSockets().map((x: WebSocket) => {
+            return x.url;
+        })
+    }
+
     write (ws: WebSocket, message: WsMessage) {ws.send(JSON.stringify(message))};
-    broadcast (message: any, sockets: WebSocket[]) {sockets.forEach(socket => this.write(socket, message))};
+    broadcast (message: WsMessage, sockets: WebSocket[]) {sockets.forEach(socket => this.write(socket, message))};
 }
