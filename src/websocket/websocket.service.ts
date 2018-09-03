@@ -28,15 +28,19 @@ export class WebsocketService {
                 console.log('Connection error')
             });
             ws.on('message', (message: WsMessage) => {
-               const responseMessage = this.wsHandler.handleWsMessage(message);
-               if (responseMessage) {
-                   this.write(ws, responseMessage);
-               }
+                this.onMessage(ws, message);
             });
             this.updateSocketState(this.stateManager.getSockets().concat([ws]));
 
         });
     };
+
+    private async onMessage(ws: WebSocket, message: WsMessage) {
+        const responseMessage = await this.wsHandler.handleWsMessage(message);
+        if (responseMessage) {
+            this.write(ws, responseMessage);
+        }
+    }
 
     private closeConnection (ws, sockets: WebSocket[]) {
         console.log('Connection to peer closed : ' + ws.url);

@@ -10,13 +10,13 @@ export class WebsocketHandler {
 
     getHandlers(): any {
         return {
-            [WsType.GET_ALL_BLOCKCHAIN]: this.blockChainHandler.getAllBlockChain.bind(this.blockChainHandler),
-            [WsType.GET_LATEST_BLOCK]: this.blockChainHandler.getLatestBlock.bind(this.blockChainHandler),
-            [WsType.PROCESS_BLOCKCHAIN]: this.blockChainHandler.processBlockChain.bind(this.blockChainHandler)
+            [WsType.GET_ALL_BLOCKCHAIN]: this.getAllBlockChain.bind(this),
+            [WsType.GET_LATEST_BLOCK]: this.getLatestBlock.bind(this),
+            [WsType.PROCESS_BLOCKCHAIN]: this.processBlockChain.bind(this)
         };
     }
 
-    handleWsMessage(message: WsMessage): WsMessage | null {
+    async handleWsMessage(message: WsMessage): Promise<WsMessage | null> {
         const exec = this.getHandlers()[message.type];
         if (!exec) {
             return null;
@@ -38,7 +38,7 @@ export class WebsocketHandler {
         };
     }
 
-    processBlockChain(data: string): WsMessage {
+    async processBlockChain(data: string): Promise<WsMessage> {
         try {
             const blocks = this.blockChainHandler.processBlockChain(data);
             if (blocks) {

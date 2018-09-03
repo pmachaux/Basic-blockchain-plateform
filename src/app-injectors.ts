@@ -5,6 +5,7 @@ import {BlockValidityUtils} from './blockchain/utils/block-validity.utils';
 import {StateManager} from './state/state-manager';
 import {WebsocketService} from './websocket/websocket.service';
 import {BlockchainHandler} from './blockchain/blockchain.handler';
+import {HttpHandler} from './routes/http-handler';
 
 const hashUtils = new HashUtils();
 const blockFactory = new BlockFactory(hashUtils);
@@ -15,3 +16,4 @@ const blockChainHandler = new BlockchainHandler(stateManager, blockFactory, bloc
 
 const websocketHandler = new WebsocketHandler(blockChainHandler);
 export const websocketService = new WebsocketService(websocketHandler, stateManager);
+export const httpHandler = new HttpHandler(blockChainHandler);

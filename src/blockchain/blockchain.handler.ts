@@ -18,14 +18,24 @@ export class BlockchainHandler {
         return blockchain.length > 0 ? blockchain[blockchain.length - 1] : null;
     }
 
-    private replaceChain(newBlocks: Block[], blockChain: Block[]): Block[] {
-        if (this.blockChainUtils.isValidChain(newBlocks) && newBlocks.length > blockChain.length) {
-            return newBlocks;
-        }
-        throw new Error('The received blockchain is invalid');
+    private replaceChain(newBlocks: Block[], blockChain: Block[]): Promise<Block[] | any> {
+        return new Promise((resolve, reject) => {
+            if (newBlocks.length > blockChain.length) {
+                this.blockChainUtils.isValidChain(newBlocks).subscribe((isValid: boolean) => {
+                    isValid ? resolve(newBlocks) : reject('The received blockchain is invalid');
+                })
+            }
+        });
     }
 
-    processBlockChain(data: string): Block[] | null {
+    generateNewBlock(data: any): Block[] {
+        const newBlock = this.blockFactory.generateNextBlock(this.stateManager.getBlockChain(), data);
+        const blockChain = this.stateManager.getBlockChain().concat([newBlock]);
+        this.stateManager.setBlockChain(blockChain);
+        return blockChain;
+    }
+
+    async processBlockChain(data: string): Promise<Block[] | null> {
         const receivedBlocks = JSON.parse(data).sort((a, b) => (a.index - b.index));
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
         const latestBlockHeld = this.getLatestBlock();
@@ -38,7 +48,7 @@ export class BlockchainHandler {
                 throw new Error('Cannot process blockchain, additionnal info needed');
             } else {
                 try {
-                    const blockChain = this.replaceChain(receivedBlocks, this.stateManager.getBlockChain());
+                    const blockChain = await this.replaceChain(receivedBlocks, this.stateManager.getBlockChain());
                     this.stateManager.setBlockChain(blockChain);
                 } catch (e) {
                     console.error('blockchain invalid');
