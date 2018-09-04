@@ -19,10 +19,7 @@ export class WebsocketMessageHandler {
     }
 
     async handleWsMessage(message: WsMessage): Promise<WsMessageDest | null> {
-        console.log('handleWsMessage');
-        console.log(message);
         const exec = this.getHandlers()[message.type];
-        console.log(exec);
         if (!exec) {
             return null;
         }
@@ -30,7 +27,6 @@ export class WebsocketMessageHandler {
     }
 
     getAllBlockChain(): WsMessageDest {
-        console.log('getAllBlockChain');
         return {
             type: WsType.PROCESS_BLOCKCHAIN,
             data: this.blockChainHandler.getAllBlockChain(),
@@ -39,7 +35,6 @@ export class WebsocketMessageHandler {
     }
 
     getLatestBlock(): WsMessageDest {
-        console.log('getLatestBlock');
         return {
             type: WsType.PROCESS_BLOCKCHAIN,
             data: this.blockChainHandler.getLatestBlock(),
@@ -48,18 +43,9 @@ export class WebsocketMessageHandler {
     }
 
     async processBlockChain(data: Block[]): Promise<WsMessageDest> {
-        console.log('processBlockChain');
         try {
             const blocks = await this.blockChainHandler.processBlockChain(data);
-            if (blocks) {
-                return {
-                    type: WsType.PROCESS_BLOCKCHAIN,
-                    data: blocks,
-                    dest: WsDestination.ALL
-                };
-            } else {
-                return null;
-            }
+            return null;
         } catch (e) {
             if (e === 'Cannot process blockchain, additionnal info needed') {
                 return {

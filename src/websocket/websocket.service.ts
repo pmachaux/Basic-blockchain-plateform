@@ -13,11 +13,9 @@ export class WebsocketService {
     private initService() {
         this.stateManager.onBlockChainChange().subscribe(blocks => {
             const lastBlock = blocks.reverse()[0];
-            console.log('init service subscribe');
-            console.log(lastBlock);
             this.broadcast({
                 type: WsType.PROCESS_BLOCKCHAIN,
-                data: lastBlock
+                data: [lastBlock]
             }, this.stateManager.getSockets());
         });
     }
@@ -28,36 +26,15 @@ export class WebsocketService {
         server.on('connection', (ws: WebSocket) => {
             const sockets = this.stateManager.getSockets();
             this.stateManager.setSockets([...sockets, ws]);
-            console.log('Connection initiated');
-
-
-            const closeWs = (ws) => {
-                const sockets = this.closeConnection(ws, this.stateManager.getSockets());
-                this.updateSocketState(sockets);
-            };
-            ws.on('close', () => closeWs(ws));
-            ws.on('error', () => closeWs(ws));
-            ws.on('message', (message: string) => {
-                this.onMessage(ws, message);
-            });
+            this.attachEventHandlersToSocket(ws);
         });
     }
 
     connectToPeers(newPeers): WebSocket[] {
-        console.log('connectToPeers');
-        console.log(newPeers);
         return newPeers.map((peer) => {
             const ws = new WebSocket(peer);
             ws.on('open', () => {
-                const closeWs = (ws) => {
-                    const sockets = this.closeConnection(ws, this.stateManager.getSockets());
-                    this.updateSocketState(sockets);
-                };
-                ws.on('close', () => closeWs(ws));
-                ws.on('error', () => closeWs(ws));
-                ws.on('message', (message: string) => {
-                    this.onMessage(ws, message);
-                });
+                this.attachEventHandlersToSocket(ws);
                 this.write(ws, {type: WsType.GET_ALL_BLOCKCHAIN});
             });
             this.updateSocketState(this.stateManager.getSockets().concat([ws]));
@@ -66,10 +43,9 @@ export class WebsocketService {
     }
 
     private async onMessage(ws: WebSocket, message: string) {
-        const responseMessage = await this.wsHandler.handleWsMessage(JSON.parse(message));
-        console.log('onMessage');
-        console.log(message);
-        console.log(responseMessage);
+        const parsedMessage: WsMessage = JSON.parse(message);
+        const responseMessage = await this.wsHandler.handleWsMessage(parsedMessage);
+
         if (responseMessage && responseMessage.dest === WsDestination.SINGLE) {
             this.write(ws, {type: responseMessage.type, data: responseMessage.data });
         } else if (responseMessage && responseMessage.dest === WsDestination.ALL) {
@@ -77,8 +53,19 @@ export class WebsocketService {
         }
     }
 
+    private attachEventHandlersToSocket(ws: WebSocket): void {
+        const closeWs = (ws) => {
+            const sockets = this.closeConnection(ws, this.stateManager.getSockets());
+            this.updateSocketState(sockets);
+        };
+        ws.on('close', () => closeWs(ws));
+        ws.on('error', () => closeWs(ws));
+        ws.on('message', (message: string) => {
+            this.onMessage(ws, message);
+        });
+    }
+
     private closeConnection (ws, sockets: WebSocket[]) {
-        console.log('Connection to peer closed : ' + ws.url);
         return sockets.filter(s => s !== ws);
     }
 
@@ -92,6 +79,8 @@ export class WebsocketService {
         });
     }
 
-    write (ws: WebSocket, message: WsMessage) {ws.send(JSON.stringify(message));}
-    broadcast (message: WsMessage, sockets: WebSocket[]) {sockets.forEach(socket => this.write(socket, message));}
+    write (ws: WebSocket, message: WsMessage) {
+        ws.send(JSON.stringify(message));}
+    broadcast (message: WsMessage, sockets: WebSocket[]) {
+                sockets.forEach(socket => this.write(socket, message));}
 }

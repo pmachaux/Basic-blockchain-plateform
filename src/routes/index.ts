@@ -1,14 +1,12 @@
 import {blockchainHandler} from '../app-injectors';
 import {websockethandler} from '../app-injectors';
-const express = require('express');
-const router = express.Router();
 
-// Blockchain handler
-router.get('/mineBlock', blockchainHandler.mineBlock);
-router.get('/blocks', blockchainHandler.getBlockChain);
+export const indexRoutes = (app: any) => {
+    // Blockchain handler
+    app.post('/mineBlock', blockchainHandler.mineBlock.bind(blockchainHandler));
+    app.get('/blocks', blockchainHandler.getBlockChain.bind(blockchainHandler));
 
 // Websocket Handler
-router.post('/addPeers', websockethandler.addPeer);
-router.get('/peers', websockethandler.getPeers);
-
-module.exports = router;
+    app.post('/addPeers', websockethandler.addPeer.bind(websockethandler));
+    app.get('/peers', websockethandler.getPeers.bind(websockethandler));
+};

@@ -1,11 +1,10 @@
-const createError = require('http-errors');
-const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
-const logger = require('morgan');
+import * as express from 'express';
+import * as bodyParser from 'body-parser';
+import * as errorHandler from 'errorhandler';
 import * as dotenv from 'dotenv';
 import {websocketService} from './app-injectors';
-const indexRouter = require('./routes/index');
+const morgan = require('morgan');
+import {indexRoutes} from './routes/index';
 
 const app = express();
 
@@ -16,34 +15,20 @@ dotenv.config();
 const result = dotenv.config({ path: './.env' });
 
 if ((result as any).error) {
-    throw (result as any).error
+    throw (result as any).error;
 }
 
-console.log((result as any).parsed)
+console.log((result as any).parsed);
 
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(morgan('dev'));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
-app.use('/', indexRouter);
+indexRoutes(app);
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
-});
-
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
-});
+if (process.env.ENVIRONMENT !== 'prod') {
+    app.use(<any> errorHandler());
+}
 
 app.set('port', process.env.PORT || 3000);
 

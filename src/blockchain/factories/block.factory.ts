@@ -22,7 +22,7 @@ export class BlockFactory {
         const nextIndex = previousBlock.index + 1;
         const nextTimeStamp = new Date().getTime();
         const nextHash = this.hashUtils.calculateHash(nextIndex + previousBlock.hash + nextTimeStamp + data);
-        return new Block(nextIndex, previousBlock.hash, nextTimeStamp, data, nextHash);
+        return new Block(nextIndex, nextTimeStamp, data, nextHash, previousBlock.hash);
     }
 
 }

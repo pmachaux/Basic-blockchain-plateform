@@ -39,33 +39,28 @@ export class BlockchainService {
         return blockChain;
     }
 
-    async processBlockChain(data: Block[]): Promise<Block[] | null> {
+    async processBlockChain(data: Block[]): Promise<void> {
         if (!Array.isArray(data)) {
             throw new Error('Wrong format of data');
         }
         const receivedBlocks = data.sort((a, b) => (a.index - b.index));
         const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1];
-        const latestBlockHeld = this.getLatestBlock();
-        if (latestBlockReceived.index > latestBlockHeld.index) {
-            console.log('index superior');
-            if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
-                console.log('hash match');
+        const latestBlockKnown = this.getLatestBlock();
+        if (latestBlockReceived.index > latestBlockKnown.index) {
+            if (latestBlockKnown.hash === latestBlockReceived.previousHash) {
                 const blockChain = this.stateManager.getBlockChain().concat([latestBlockReceived]);
                 this.stateManager.setBlockChain(blockChain);
-                return [latestBlockReceived];
+                return;
             } else if (receivedBlocks.length === 1) {
-                console.error('hash not match and length 1');
                 throw new Error('Cannot process blockchain, additionnal info needed');
             } else {
                 try {
-                    console.error('try to replace chain');
                     const blockChain = await this.replaceChain(receivedBlocks, this.stateManager.getBlockChain());
-                    console.error('chain replaced');
                     this.stateManager.setBlockChain(blockChain);
                 } catch (e) {
                     console.error('blockchain invalid');
                 } finally {
-                    return null;
+                    return;
                 }
 
             }

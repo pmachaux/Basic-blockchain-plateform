@@ -16,7 +16,7 @@ const blockchainSubject: Subject<Block[]> = new Subject<Block[]>();
 export class StateManager {
 
     getSockets(): WebSocket[] {
-        return [...state.sockets]
+        return [...state.sockets];
     }
 
     setSockets(data: WebSocket[]): void {
@@ -28,7 +28,7 @@ export class StateManager {
     }
 
     setBlockChain(data: Block[]): void {
-        state.blockchain = data;
+        state.blockchain = data.sort(((a, b) => (a.index - b.index))).map(x => ({...x}));
         blockchainSubject.next(data);
     }
 
