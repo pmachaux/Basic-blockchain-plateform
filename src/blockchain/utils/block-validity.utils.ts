@@ -30,7 +30,7 @@ export class BlockValidityUtils {
             });
         });
 
-        return combineLatest(blockToValidate).pipe(map((isValidList: boolean[] )=> {
+        return combineLatest(blockToValidate).pipe(map((isValidList: boolean[] ) => {
             return !isValidList.some(item => !item);
         }));
     }

@@ -1,6 +1,7 @@
 import {WsMessage} from './websocket-message.interface';
 import {WsDestination, WsType} from './websocket.constant';
 import {BlockchainService} from '../blockchain/blockchain.service';
+import {Block} from '../blockchain/models/block.model';
 
 export type WsMessageDest = WsMessage & {dest: WsDestination};
 
@@ -18,7 +19,10 @@ export class WebsocketMessageHandler {
     }
 
     async handleWsMessage(message: WsMessage): Promise<WsMessageDest | null> {
+        console.log('handleWsMessage');
+        console.log(message);
         const exec = this.getHandlers()[message.type];
+        console.log(exec);
         if (!exec) {
             return null;
         }
@@ -26,6 +30,7 @@ export class WebsocketMessageHandler {
     }
 
     getAllBlockChain(): WsMessageDest {
+        console.log('getAllBlockChain');
         return {
             type: WsType.PROCESS_BLOCKCHAIN,
             data: this.blockChainHandler.getAllBlockChain(),
@@ -34,6 +39,7 @@ export class WebsocketMessageHandler {
     }
 
     getLatestBlock(): WsMessageDest {
+        console.log('getLatestBlock');
         return {
             type: WsType.PROCESS_BLOCKCHAIN,
             data: this.blockChainHandler.getLatestBlock(),
@@ -41,23 +47,31 @@ export class WebsocketMessageHandler {
         };
     }
 
-    async processBlockChain(data: string): Promise<WsMessageDest> {
+    async processBlockChain(data: Block[]): Promise<WsMessageDest> {
+        console.log('processBlockChain');
         try {
-            const blocks = this.blockChainHandler.processBlockChain(data);
+            const blocks = await this.blockChainHandler.processBlockChain(data);
             if (blocks) {
                 return {
                     type: WsType.PROCESS_BLOCKCHAIN,
                     data: blocks,
                     dest: WsDestination.ALL
-                }
+                };
             } else {
                 return null;
             }
         } catch (e) {
-            return {
-                type: WsType.GET_ALL_BLOCKCHAIN,
-                dest: WsDestination.ALL
+            if (e === 'Cannot process blockchain, additionnal info needed') {
+                return {
+                    type: WsType.GET_ALL_BLOCKCHAIN,
+                    dest: WsDestination.ALL
+                };
+            } else {
+                console.error('error on process blockchain');
+                console.error(e);
+                return null;
             }
+
         }
 
     }

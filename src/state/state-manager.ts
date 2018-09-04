@@ -11,20 +11,20 @@ const state: {
     sockets: []
 };
 
-const blockchainSubject: Subject<Block[]>= new Subject<Block[]>();
+const blockchainSubject: Subject<Block[]> = new Subject<Block[]>();
 
 export class StateManager {
 
     getSockets(): WebSocket[] {
-        return {...state.sockets};
+        return [...state.sockets]
     }
 
     setSockets(data: WebSocket[]): void {
         state.sockets = data;
     }
 
-    getBlockChain(): Block[] {
-        return {...state.blockchain};
+    getBlockChain(): Block[]  {
+        return state.blockchain ? [...state.blockchain] : null;
     }
 
     setBlockChain(data: Block[]): void {

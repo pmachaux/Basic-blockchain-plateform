@@ -4,17 +4,20 @@
   "private": true,
   "scripts": {
     "start": "npm run build && npm run watch",
+    "start-test-env": "nodemon test-env/app.js",
     "build": "npm run build-ts && npm run tslint",
     "serve": "nodemon dist/app.js",
     "build-ts": "tsc",
     "watch-ts": "tsc -w",
     "tslint": "tslint -c tslint.json -p tsconfig.json",
+    "tslint-fix": "tslint -c tslint.json -p tsconfig.json --fix src/**/*.ts",
     "watch": "concurrently -k -p \"[{name}]\" -n \"Sass,TypeScript,Node\" -c \"yellow.bold,cyan.bold,green.bold\" \"npm run watch-ts\" \"npm run serve\""
   },
   "dependencies": {
     "cookie-parser": "~1.4.3",
     "crypto-js": "^3.1.9-1",
     "debug": "~2.6.9",
+    "dotenv": "^6.0.0",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
     "morgan": "~1.9.0",

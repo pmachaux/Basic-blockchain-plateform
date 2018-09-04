@@ -7,7 +7,7 @@ const router = express.Router();
 router.get('/mineBlock', blockchainHandler.mineBlock);
 router.get('/blocks', blockchainHandler.getBlockChain);
 
-//Websocket Handler
+// Websocket Handler
 router.post('/addPeers', websockethandler.addPeer);
 router.get('/peers', websockethandler.getPeers);
 

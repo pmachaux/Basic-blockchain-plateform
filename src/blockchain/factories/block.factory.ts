@@ -1,4 +1,4 @@
-import {Block} from "../models/block.model";
+import {Block} from '../models/block.model';
 import {HashUtils} from '../utils/hash.utils';
 
 export class BlockFactory {
@@ -6,15 +6,15 @@ export class BlockFactory {
     constructor(private hashUtils: HashUtils) {
     }
 
-    createGenesisBlock(): Block{
+    createGenesisBlock(): Block {
         const index = 0;
-        const timestamp = new Date().getTime();
-        const data = "My genesis block";
-        const previousHash = "0";
+        const timestamp = 1536049495100;
+        const data = 'My genesis block';
+        const previousHash = '0';
         const hash = this.hashUtils.calculateHash(index + previousHash + timestamp + data);
         return new Block(
             index, timestamp, data, hash, previousHash
-        )
+        );
     }
 
     generateNextBlock(blockChain, data): Block {

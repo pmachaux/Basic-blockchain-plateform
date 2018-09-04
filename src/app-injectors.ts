@@ -14,10 +14,7 @@ const blockValidityUtils = new BlockValidityUtils(blockFactory, hashUtils);
 const stateManager = new StateManager();
 const blockchainService = new BlockchainService(stateManager, blockFactory, blockValidityUtils);
 const websocketMessageHandler = new WebsocketMessageHandler(blockchainService);
-const websocketService = new WebsocketService(websocketMessageHandler, stateManager);
 
-
-
-
+export const websocketService = new WebsocketService(websocketMessageHandler, stateManager);
 export const websockethandler = new WebsocketHandler(websocketService);
 export const blockchainHandler = new BlockchainHandler(blockchainService);
