@@ -40,6 +40,7 @@ export class BlockchainService {
     }
 
     async processBlockChain(data: Block[]): Promise<void> {
+        const blockChainState = this.stateManager.getBlockChain();
         if (!Array.isArray(data)) {
             throw new Error('Wrong format of data');
         }
@@ -48,15 +49,23 @@ export class BlockchainService {
         const latestBlockKnown = this.getLatestBlock();
         if (latestBlockReceived.index > latestBlockKnown.index) {
             if (latestBlockKnown.hash === latestBlockReceived.previousHash) {
-                const blockChain = this.stateManager.getBlockChain().concat([latestBlockReceived]);
-                this.stateManager.setBlockChain(blockChain);
+                if (this.blockChainUtils.isValidNewBlock(latestBlockReceived, latestBlockKnown))
+                {
+                    const blockChain = this.stateManager.getBlockChain().concat([latestBlockReceived]);
+                    this.stateManager.setBlockChain(blockChain);
+                }
                 return;
             } else if (receivedBlocks.length === 1) {
                 throw new Error('Cannot process blockchain, additionnal info needed');
             } else {
                 try {
-                    const blockChain = await this.replaceChain(receivedBlocks, this.stateManager.getBlockChain());
-                    this.stateManager.setBlockChain(blockChain);
+                    const blockChain = await this.replaceChain(receivedBlocks, blockChainState);
+                    if (blockChainState.length === blockChainState.length) {
+                        // If the blockchain did not get any longer while processing we update
+                        this.stateManager.setBlockChain(blockChain);
+                    } else {
+                        throw new Error('Cannot process blockchain, additionnal info needed');
+                    }
                 } catch (e) {
                     console.error('blockchain invalid');
                 } finally {

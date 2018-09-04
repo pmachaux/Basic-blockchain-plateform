@@ -24,7 +24,7 @@ export class StateManager {
     }
 
     getBlockChain(): Block[]  {
-        return state.blockchain ? [...state.blockchain] : null;
+        return state.blockchain ? state.blockchain.map(x => ({...x})) : null;
     }
 
     setBlockChain(data: Block[]): void {
