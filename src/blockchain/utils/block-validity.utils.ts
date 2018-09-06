@@ -1,12 +1,11 @@
 import {HashUtils} from './hash.utils';
-import {BlockFactory} from '../factories/block.factory';
 import {Block} from '../models/block.model';
 import {Observable, combineLatest} from 'rxjs';
 import {map} from 'rxjs/operators';
+import {VALID_GAP_BETWEEN_TIMESTAMP} from '../blockchain.const';
 
 export class BlockValidityUtils {
-  constructor(private blockFactory: BlockFactory, private hashUtils: HashUtils) {
-    this.blockFactory = blockFactory;
+  constructor(private hashUtils: HashUtils) {
     this.hashUtils = Object.freeze(hashUtils);
   }
 
@@ -26,7 +25,8 @@ export class BlockValidityUtils {
     const isIndexGreater = newBlock.index > previousBlock.index;
     const isPreviousHashMatching = newBlock.previousHash === previousBlock.hash;
     const isDataFormatValid = this.isValidDataFormat(newBlock.data);
-    if (!isIndexGreater || !isPreviousHashMatching || !isDataFormatValid) {
+    const isValidTimeStamp = this.isValidTimeStamp(newBlock.timestamp, previousBlock.timestamp);
+    if (!isIndexGreater || !isPreviousHashMatching || !isDataFormatValid || !isValidTimeStamp) {
       return false;
     }
 
@@ -38,6 +38,14 @@ export class BlockValidityUtils {
   private isValidDataFormat(data: any): boolean {
     // In our case it's set to true, but in general case it's worth checking integrity
     return true;
+  }
+
+  private isValidTimeStamp(currentTimestamp: number, previousTimestamp: number): boolean {
+    const currentDate = new Date();
+    return (
+      previousTimestamp - VALID_GAP_BETWEEN_TIMESTAMP < currentTimestamp &&
+      currentTimestamp - VALID_GAP_BETWEEN_TIMESTAMP < currentDate.getTime()
+    );
   }
 
   isValidChain(blockChain: Block[]): Observable<boolean> {
