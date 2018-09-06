@@ -7,10 +7,18 @@ import {BlockchainService} from './blockchain/blockchain.service';
 import {BlockchainHandler} from './blockchain/blockchain.handler';
 import {WebsocketService} from './websocket/websocket.service';
 import {WebsocketHandler} from './websocket/websocket.handler';
+import {BlockchainDifficultyUtils} from './blockchain/utils/blockchain-difficulty.utils';
 
 const hashUtils = new HashUtils();
-const blockFactory = new BlockFactory(hashUtils);
-const blockValidityUtils = new BlockValidityUtils(blockFactory, hashUtils);
+const blockchainDifficultyUtils = new BlockchainDifficultyUtils();
+const blockFactory = new BlockFactory(hashUtils, blockchainDifficultyUtils);
+
+const blockValidityUtils = new BlockValidityUtils(
+  blockFactory,
+  hashUtils
+);
+
+
 const stateManager = new StateManager();
 const blockchainService = new BlockchainService(stateManager, blockFactory, blockValidityUtils);
 const websocketMessageHandler = new WebsocketMessageHandler(blockchainService);
