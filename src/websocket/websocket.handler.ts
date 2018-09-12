@@ -1,17 +1,33 @@
 import {WebsocketService} from './websocket.service';
+import {WsMessage} from './websocket-message.interface';
+import {WsType} from './websocket.constant';
+import {DataService} from '../data/data.service';
+import {BlockchainService} from '../blockchain/services/blockchain.service';
 
 export class WebsocketHandler {
+  constructor(private wsService: WebsocketService, private dataService: DataService, private blockchainService: BlockchainService) {}
 
-    constructor(private wsService: WebsocketService) {
-    }
+  addPeer(req, res) {
+    this.wsService.connectToPeers([req.body.peers]);
+    return res.status(204).end();
+  }
 
-    addPeer(req, res) {
-        this.wsService.connectToPeers([req.body.peers]);
-        return res.status(204).end();
-    }
+  getPeers(req, res) {
+    const peers = this.wsService.getPeers();
+    return res.send(peers);
+  }
 
-    getPeers(req, res) {
-        const peers = this.wsService.getPeers();
-        return res.send(peers);
-    }
+  pushNewDataToMiners(env, req, res) {
+    const blockchainId = req.body.blockchainId;
+
+
+    const data = this.dataService.formatData(req.body.data, blockchainId);
+    const message: WsMessage = {
+      type: WsType.PUSH_NEW_DATA,
+      data,
+    };
+    this.wsService.processOwnMessage(message);
+    this.wsService.broadcastToAll(message);
+    return res.status(204).end();
+  }
 }

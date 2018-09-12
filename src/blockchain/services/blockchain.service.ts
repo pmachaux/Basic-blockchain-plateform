@@ -1,9 +1,9 @@
-import {BlockFactory} from './factories/block.factory';
-import {BlockValidityUtils} from './utils/block-validity.utils';
-import {StateManager} from '../state/state-manager';
-import {Block} from './models/block.model';
-import {BlockchainDifficultyUtils} from './utils/blockchain-difficulty.utils';
-import {DIFFICULTY_ADJUSTMENT_INTERVAL} from './blockchain.const';
+import {BlockFactory} from '../factories/block.factory';
+import {BlockValidityUtils} from '../utils/block-validity.utils';
+import {StateManager} from '../../state/state-manager';
+import {Block} from '../models/block.model';
+import {BlockchainDifficultyUtils} from '../utils/blockchain-difficulty.utils';
+import {DIFFICULTY_ADJUSTMENT_INTERVAL} from '../blockchain.const';
 
 export class BlockchainService {
   constructor(
@@ -45,12 +45,12 @@ export class BlockchainService {
     this.stateManager.setBlockChain([this.blockFactory.createGenesisBlock()]);
   }
 
-  getAllBlockChain(): Block[] {
-    return this.stateManager.getBlockChain();
+  getAllBlocks(blockchainId?: string): Block[] {
+    return this.stateManager.getBlockChain(blockchainId);
   }
 
-  getLatestBlock(): Block {
-    const blockchain = this.stateManager.getBlockChain();
+  getLatestBlock(blockchainId?: string): Block {
+    const blockchain = this.stateManager.getBlockChain(blockchainId);
     return blockchain.length > 0 ? blockchain[blockchain.length - 1] : null;
   }
 
@@ -65,6 +65,8 @@ export class BlockchainService {
   }
 
   generateNewBlock(data: any): Block[] {
+    // Todo extract else where and update mining process
+
     const newBlock = this.blockFactory.generateNextBlock(this.stateManager.getBlockChain(), data);
     const blockChain = this.stateManager.getBlockChain().concat([newBlock]);
     this.stateManager.setBlockChain(blockChain);
@@ -81,7 +83,10 @@ export class BlockchainService {
     const latestBlockKnown = this.getLatestBlock();
     if (latestBlockReceived.index > latestBlockKnown.index) {
       if (latestBlockKnown.hash === latestBlockReceived.previousHash) {
-        if (this.blockChainUtils.isValidNewBlock(latestBlockReceived, latestBlockKnown)) {
+        if (
+          this.blockChainUtils.isDataValid(latestBlockReceived.data, this.stateManager.getData()) &&
+          this.blockChainUtils.isValidNewBlock(latestBlockReceived, latestBlockKnown)
+        ) {
           const blockChain = this.stateManager.getBlockChain().concat([latestBlockReceived]);
           this.stateManager.setBlockChain(blockChain);
         }

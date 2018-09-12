@@ -3,6 +3,7 @@ import {Block} from '../models/block.model';
 import {Observable, combineLatest} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {VALID_GAP_BETWEEN_TIMESTAMP} from '../blockchain.const';
+import {DataRecord} from '../../interfaces/data.interfaces';
 
 export class BlockValidityUtils {
   constructor(private hashUtils: HashUtils) {
@@ -21,23 +22,36 @@ export class BlockValidityUtils {
     return sortedKeys.map(x => block[x].toString()).join();
   }
 
+  isDataValid(dataToCheck: DataRecord[], knownData: DataRecord[]): boolean {
+    const sortedDataToCheck = this.sortDataRecord(dataToCheck);
+    const matchingKnownData = knownData.filter(x => sortedDataToCheck.some(y => y.id === x.id));
+    const sortedMatchingKnownData = this.sortDataRecord(matchingKnownData);
+    return sortedDataToCheck.toString() === sortedMatchingKnownData.toString();
+  }
+
+  private sortDataRecord(list: DataRecord[]): DataRecord[] {
+    return list.sort((a, b) => {
+      if (a.id.toString() > b.id.toString()) {
+        return 1;
+      } else if (a.id.toString() < b.id.toString()) {
+        return -1;
+      } else {
+        return 0;
+      }
+    });
+  }
+
   isValidNewBlock(newBlock: Block, previousBlock: Block): boolean {
     const isIndexGreater = newBlock.index > previousBlock.index;
     const isPreviousHashMatching = newBlock.previousHash === previousBlock.hash;
-    const isDataFormatValid = this.isValidDataFormat(newBlock.data);
     const isValidTimeStamp = this.isValidTimeStamp(newBlock.timestamp, previousBlock.timestamp);
-    if (!isIndexGreater || !isPreviousHashMatching || !isDataFormatValid || !isValidTimeStamp) {
+    if (!isIndexGreater || !isPreviousHashMatching || !isValidTimeStamp) {
       return false;
     }
 
     const isNewHashValid =
       newBlock.hash === this.hashUtils.calculateHash(this.getBlockHashInput(newBlock));
     return isNewHashValid;
-  }
-
-  private isValidDataFormat(data: any): boolean {
-    // In our case it's set to true, but in general case it's worth checking integrity
-    return true;
   }
 
   private isValidTimeStamp(currentTimestamp: number, previousTimestamp: number): boolean {

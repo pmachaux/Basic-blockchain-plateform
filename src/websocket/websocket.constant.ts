@@ -1,7 +1,8 @@
 export enum WsType {
     GET_ALL_BLOCKCHAIN = 'getAllBlockChain',
     GET_LATEST_BLOCK = 'getLatestBlock',
-    PROCESS_BLOCKCHAIN = 'processBlockChain'
+    PROCESS_BLOCKCHAIN = 'processBlockChain',
+    PUSH_NEW_DATA = 'newData'
 }
 
 export enum WsDestination {
