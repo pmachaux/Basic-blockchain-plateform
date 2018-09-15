@@ -4,22 +4,21 @@ import {StateManager} from '../../state/state-manager';
 import {Block} from '../models/block.model';
 import {BlockchainDifficultyUtils} from '../utils/blockchain-difficulty.utils';
 import {DIFFICULTY_ADJUSTMENT_INTERVAL} from '../blockchain.const';
+import {BlockchainFactory} from '../factories/blockchain.factory';
+import {Blockchain} from '../models/blockchain.model';
 
 export class BlockchainService {
   constructor(
     private stateManager: StateManager,
     private blockFactory: BlockFactory,
+    private blockChainFactory: BlockchainFactory,
     private blockChainUtils: BlockValidityUtils,
-    private blockchainDifficultyUtils: BlockchainDifficultyUtils,
-  ) {
-    this.onInit();
-    this.initBlockChain();
-  }
+  ) {}
 
-  onInit(): void {
+  /*  onInit(): void {
     this.stateManager.onBlockChainChange().subscribe(() => {
       const blockChainWithNoGenesysBlock = this.stateManager
-        .getBlockChain()
+        .getBlocksFromChain()
         .filter(x => x.index.toString() !== '0');
 
       if (
@@ -39,24 +38,47 @@ export class BlockchainService {
         this.blockchainDifficultyUtils.setDifficulty(difficulty);
       }
     });
+  }*/
+  doesBlockchainExists(id: string): boolean {
+    const allChains = this.getAllBlockchainsIdentifiers();
+    return allChains.some(x => x.id === id);
   }
 
-  initBlockChain(): void {
-    this.stateManager.setBlockChain([this.blockFactory.createGenesisBlock()]);
+  doesBlockchainNameAlreadyInUse(name: string): boolean {
+    const allChains = this.getAllBlockchainsIdentifiers();
+    return allChains.some(x => x.name === name);
+  }
+
+  getAllChains(): Array<Blockchain> {
+    return this.stateManager.getAllChains();
+  }
+
+  getAllBlockchainsIdentifiers(): Array<Pick<Blockchain, 'id' | 'name'>> {
+    return this.getAllChains().map(x => ({id: x.id, name: x.name}));
+  }
+
+  initBlockChain(name: string): string | null {
+    const blockchain = this.blockChainFactory.createNewBlockChain(name);
+    try {
+      this.stateManager.setNewChain(blockchain);
+      return blockchain.id;
+    } catch {
+      return null;
+    }
   }
 
   getAllBlocks(blockchainId?: string): Block[] {
-    return this.stateManager.getBlockChain(blockchainId);
+    return this.stateManager.getBlocksFromChain(blockchainId);
   }
 
   getLatestBlock(blockchainId?: string): Block {
-    const blockchain = this.stateManager.getBlockChain(blockchainId);
+    const blockchain = this.stateManager.getBlocksFromChain(blockchainId);
     return blockchain.length > 0 ? blockchain[blockchain.length - 1] : null;
   }
 
-  private replaceChain(newBlocks: Block[], blockChain: Block[]): Promise<Block[] | any> {
+  private replaceChain(newBlocks: Block[], blocksAlreadyInChain: Block[]): Promise<Block[] | any> {
     return new Promise((resolve, reject) => {
-      if (newBlocks.length > blockChain.length) {
+      if (newBlocks.length > blocksAlreadyInChain.length) {
         this.blockChainUtils.isValidChain(newBlocks).subscribe((isValid: boolean) => {
           isValid ? resolve(newBlocks) : reject('The received blockchain is invalid');
         });
@@ -64,17 +86,44 @@ export class BlockchainService {
     });
   }
 
-  generateNewBlock(data: any): Block[] {
+  /*  generateNewBlock(data: any, id: string): Block[] {
     // Todo extract else where and update mining process
 
-    const newBlock = this.blockFactory.generateNextBlock(this.stateManager.getBlockChain(), data);
-    const blockChain = this.stateManager.getBlockChain().concat([newBlock]);
-    this.stateManager.setBlockChain(blockChain);
+    const newBlock = this.blockFactory.generateNextBlock(
+      this.stateManager.getBlocksFromChain(),
+      data,
+    );
+    const blockChain = this.stateManager.getBlocksFromChain().concat([newBlock]);
+    this.stateManager.setBlocksInChain(blockChain);
     return blockChain;
+  }*/
+
+  async processNewChain(chain: Blockchain): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (this.doesBlockchainExists(chain.id) || this.doesBlockchainNameAlreadyInUse(chain.name)) {
+        reject('Chain already exists');
+      }
+      this.blockChainUtils.isValidChain(chain.blocks).subscribe((isValid: boolean) => {
+        if (isValid) {
+          try {
+            this.stateManager.setNewChain(chain);
+            resolve();
+          } catch (e) {
+            reject('BlockChain with same id already exists');
+          }
+        } else {
+          reject('The received blockchain is invalid');
+        }
+      });
+    });
   }
 
-  async processBlockChain(data: Block[]): Promise<void> {
-    const blockChainState = this.stateManager.getBlockChain();
+  async processBlockChain(data: Block[], chainId: string): Promise<void> {
+    if (!this.doesBlockchainExists(chainId)) {
+      throw new Error('Chain does not exists');
+    }
+
+    const blocksStateInChain = this.stateManager.getBlocksFromChain();
     if (!Array.isArray(data)) {
       throw new Error('Wrong format of data');
     }
@@ -84,21 +133,24 @@ export class BlockchainService {
     if (latestBlockReceived.index > latestBlockKnown.index) {
       if (latestBlockKnown.hash === latestBlockReceived.previousHash) {
         if (
-          this.blockChainUtils.isDataValid(latestBlockReceived.data, this.stateManager.getData()) &&
+          this.blockChainUtils.isDataValid(
+            latestBlockReceived.data,
+            this.stateManager.getData(chainId),
+          ) &&
           this.blockChainUtils.isValidNewBlock(latestBlockReceived, latestBlockKnown)
         ) {
-          const blockChain = this.stateManager.getBlockChain().concat([latestBlockReceived]);
-          this.stateManager.setBlockChain(blockChain);
+          const blockChain = this.stateManager.getBlocksFromChain().concat([latestBlockReceived]);
+          this.stateManager.setBlocksInChain(blockChain, chainId);
         }
         return;
       } else if (receivedBlocks.length === 1) {
         throw new Error('Cannot process blockchain, additionnal info needed');
       } else {
         try {
-          const blockChain = await this.replaceChain(receivedBlocks, blockChainState);
-          if (blockChainState.length === blockChainState.length) {
+          const blockChain = await this.replaceChain(receivedBlocks, blocksStateInChain);
+          if (blocksStateInChain.length === blocksStateInChain.length) {
             // If the blockchain did not get any longer while processing we update
-            this.stateManager.setBlockChain(blockChain);
+            this.stateManager.setBlocksInChain(blockChain, chainId);
           } else {
             throw new Error('Cannot process blockchain, additionnal info needed');
           }

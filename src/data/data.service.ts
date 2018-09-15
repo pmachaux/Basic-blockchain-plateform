@@ -5,20 +5,19 @@ import {DataRecord} from '../interfaces/data.interfaces';
 export class DataService {
   constructor(private dataUtils: DataUtils, private stateManager: StateManager) {}
 
-  withdrawData(data: DataRecord[]): void {
-    const currentData = this.stateManager.getData();
+  withdrawData(dataToRemove: DataRecord[], chainId: string): void {
+    const currentData = this.stateManager.getData(chainId);
     const filteredData = currentData.filter(
-      x => !data.some(dataToWithdraw => dataToWithdraw.id === x.id),
+      x => !dataToRemove.some(dataToWithdraw => dataToWithdraw.id === x.id),
     );
-    this.stateManager.setData(filteredData);
+    this.stateManager.setData(filteredData, chainId);
   }
 
-  processNewData(data: DataRecord[]): void {
+  processNewData(data: DataRecord[], chainId: string): void {
     try {
       const validData = data.filter(x => this.dataUtils.isDataFormatValid(x));
       if (validData.length > 0) {
-        const currentData = this.stateManager.getData();
-        this.stateManager.setData([...currentData, ...validData]);
+        this.stateManager.addData([...validData], chainId);
       }
     } catch (e) {
       console.error('Invalid format of data');

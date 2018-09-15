@@ -24,7 +24,7 @@ app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-indexRoutes(app);
+indexRoutes(app, process.env);
 
 if (process.env.ENVIRONMENT !== 'prod') {
     app.use(<any> errorHandler());

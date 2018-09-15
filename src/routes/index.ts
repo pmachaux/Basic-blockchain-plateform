@@ -3,7 +3,8 @@ import {websockethandler} from '../app-injectors';
 
 export const indexRoutes = (app: any, env: any) => {
   // Blockchain handler
-  app.get('/blocks', blockchainHandler.getBlockChain.bind(blockchainHandler));
+  app.get('/blocks/:blockchainId', blockchainHandler.getBlockChain.bind(blockchainHandler));
+  app.post('/createblockchain', blockchainHandler.createBlockChain.bind(blockchainHandler));
 
   // Websocket Handler
   app.post('/addPeers', websockethandler.addPeer.bind(websockethandler));

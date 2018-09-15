@@ -1,8 +1,9 @@
 import * as WebSocket from 'ws';
-import {WebsocketMessageHandler} from './websocket-message.handler';
+import {WebsocketMessageHandler, WsMessageDest} from './websocket-message.handler';
 import {WsMessage} from './websocket-message.interface';
 import {WsDestination, WsType} from './websocket.constant';
 import {StateManager} from '../state/state-manager';
+import {Blockchain} from '../blockchain/models/blockchain.model';
 
 export class WebsocketService {
   constructor(private wsHandler: WebsocketMessageHandler, private stateManager: StateManager) {
@@ -10,14 +11,18 @@ export class WebsocketService {
   }
 
   private initService() {
-    this.stateManager.onBlockChainChange().subscribe(blocks => {
-      const lastBlock = blocks.reverse()[0];
-      this.broadcastToAll(
-        {
-          type: WsType.PROCESS_BLOCKCHAIN,
-          data: [lastBlock],
-        }
-      );
+    this.stateManager.onBlockChainChange().subscribe((data: Pick<Blockchain, 'id' | 'blocks'>) => {
+      const lastBlock = data.blocks.reverse()[0];
+      this.broadcastToAll({
+        type: WsType.PROCESS_BLOCKCHAIN,
+        data: [lastBlock],
+      });
+    });
+    this.stateManager.onNewChain().subscribe(chain => {
+      this.broadcastToAll({
+        type: WsType.PUSH_NEW_CHAIN,
+        data: chain,
+      });
     });
   }
 
@@ -36,7 +41,7 @@ export class WebsocketService {
       const ws = new WebSocket(peer);
       ws.on('open', () => {
         this.attachEventHandlersToSocket(ws);
-        this.write(ws, {type: WsType.GET_ALL_BLOCKCHAIN});
+        this.write(ws, {type: WsType.GET_ALL_CHAINS});
       });
       this.updateSocketState(this.stateManager.getSockets().concat([ws]));
     });
@@ -44,9 +49,25 @@ export class WebsocketService {
 
   private async onMessage(ws: WebSocket | null, message: string) {
     const parsedMessage: WsMessage = JSON.parse(message);
-    const responseMessage = await this.wsHandler.handleWsMessage(parsedMessage);
+    try {
+      const result = await this.wsHandler.handleWsMessage(parsedMessage);
 
-    if (responseMessage && responseMessage.dest === WsDestination.SINGLE) {
+      if (!result) {
+        return;
+      }
+
+      if (Array.isArray(result)) {
+        result.forEach(responseMessage => {
+          this.processResultMessage(responseMessage, ws);
+        });
+      } else {
+        this.processResultMessage(result, ws);
+      }
+    } catch {}
+  }
+
+  private processResultMessage(responseMessage: WsMessageDest, ws: WebSocket): void {
+    if (responseMessage.dest === WsDestination.SINGLE) {
       this.write(ws, {type: responseMessage.type, data: responseMessage.data});
     } else if (responseMessage && responseMessage.dest === WsDestination.ALL) {
       this.broadcastToAll({type: responseMessage.type, data: responseMessage.data});

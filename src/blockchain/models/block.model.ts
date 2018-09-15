@@ -3,8 +3,8 @@ import {DataRecord} from '../../interfaces/data.interfaces';
 export class Block {
   constructor(
     public index: number,
-    public timestamp: number,
     public blockChainId: string,
+    public timestamp: number,
     public data: DataRecord[],
     public hash: string,
     public previousHash: string = '0',

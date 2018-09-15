@@ -7,18 +7,19 @@ import {Blockchain} from '../blockchain/models/blockchain.model';
 const state: {
   blockchains: Blockchain[];
   sockets: WebSocket[];
-  data: DataRecord[];
-  currentBlockchainMined: string;
-  blockchainsToValidate: string[];
+  idCurrentBlockchainMined: string;
+  idsBlockchainsToValidate: string[];
 } = {
   blockchains: [],
   sockets: [],
-  data: [],
-  currentBlockchainMined: null,
-  blockchainsToValidate: [],
+  idCurrentBlockchainMined: null,
+  idsBlockchainsToValidate: [],
 };
 
-const blockchainSubject: Subject<Block[]> = new Subject<Block[]>();
+const blocksSubject: Subject<Pick<Blockchain, 'id' | 'blocks'>> = new Subject<
+  Pick<Blockchain, 'id' | 'blocks'>
+>();
+const chainsSubject: Subject<Blockchain> = new Subject<Blockchain>();
 
 export class StateManager {
   getSockets(): WebSocket[] {
@@ -29,29 +30,82 @@ export class StateManager {
     state.sockets = data;
   }
 
-  getData(): DataRecord[] {
-    return state.data.map(x => ({...x}));
+  getData(chainId: string): DataRecord[] | null {
+    const blockchain = state.blockchains.find(x => x.id === chainId);
+    if (!blockchain) {
+      return null;
+    } else {
+      return blockchain.dataToProcess.map(x => ({...x}));
+    }
   }
 
-  setData(data: DataRecord[]): void {
-    state.data = data.map(x => ({...x}));
+  setData(data: DataRecord[], chainId: string): void {
+    const blockchain = state.blockchains.find(x => x.id === chainId);
+    if (blockchain) {
+      blockchain.dataToProcess = data.map(x => ({...x}));
+    }
   }
 
-  getBlockChain(blockchainId?: string): Block[] {
-    const id = blockchainId || state.currentBlockchainMined;
+  addData(data: DataRecord[], chainId: string): void {
+    const blockchain = state.blockchains.find(x => x.id === chainId);
+    if (blockchain) {
+      blockchain.dataToProcess = blockchain.dataToProcess.concat(data.map(x => ({...x})));
+    }
+  }
+
+  getIdCurrentChainMined(): string {
+    return state.idCurrentBlockchainMined;
+  }
+
+  setIdCurrentBlockChainMined(blockChainId: string): void {
+    if (state.blockchains.some(x => x.id === blockChainId)) {
+      state.idCurrentBlockchainMined;
+    }
+  }
+
+  getChain(blockchainId?: string): Blockchain {
+    const id = blockchainId || state.idCurrentBlockchainMined;
+    const currentBlockchain = state.blockchains.find(x => x.id === id);
+    return currentBlockchain ? {...currentBlockchain, blocks: [...currentBlockchain.blocks]} : null;
+  }
+
+  getAllChains(): Blockchain[] {
+    return state.blockchains.map(x => ({...x, blocks: [...x.blocks]}));
+  }
+
+  setNewChain(chain: Blockchain): void | Error {
+    if (!state.blockchains.some(x => x.id === chain.id)) {
+      state.blockchains = [...state.blockchains, {...chain}];
+      chainsSubject.next({...chain});
+    } else {
+      throw new Error('A blockchain with the same id already exists');
+    }
+  }
+
+  getBlocksFromChain(blockchainId?: string): Block[] {
+    const id = blockchainId || state.idCurrentBlockchainMined;
     const currentBlockchain = state.blockchains.find(x => x.id === id);
     return currentBlockchain ? currentBlockchain.blocks.map(x => ({...x})) : null;
   }
 
-  setBlockChain(data: Block[], blockchainId?: string): void {
-    const id = blockchainId || state.currentBlockchainMined;
+  setBlocksInChain(data: Block[], blockchainId?: string): void {
+    const id = blockchainId || state.idCurrentBlockchainMined;
     const currentBlockchain = state.blockchains.find(x => x.id === id);
+
+    if (!currentBlockchain) {
+      return;
+    }
+
     const newBlocks = data.sort((a, b) => a.index - b.index).map(x => ({...x}));
     currentBlockchain.blocks = newBlocks;
-    blockchainSubject.next(data);
+    blocksSubject.next({id: id, blocks: newBlocks});
   }
 
-  onBlockChainChange(): Subject<Block[]> {
-    return blockchainSubject;
+  onBlockChainChange(): Subject<Pick<Blockchain, 'id' | 'blocks'>> {
+    return blocksSubject;
+  }
+
+  onNewChain(): Subject<Blockchain> {
+    return chainsSubject;
   }
 }
