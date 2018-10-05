@@ -76,6 +76,12 @@ export class BlockchainService {
     return blockchain.length > 0 ? blockchain[blockchain.length - 1] : null;
   }
 
+  selectChainToMine(id: string): Pick<Blockchain, 'id' | 'name'> {
+    this.stateManager.setIdCurrentBlockChainMined(id);
+    const chainMined = this.stateManager.getChain(this.stateManager.getIdCurrentChainMined());
+    return {name: chainMined.name, id: chainMined.id};
+  }
+
   private replaceChain(newBlocks: Block[], blocksAlreadyInChain: Block[]): Promise<Block[] | any> {
     return new Promise((resolve, reject) => {
       if (newBlocks.length > blocksAlreadyInChain.length) {

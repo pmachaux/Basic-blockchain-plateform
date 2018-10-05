@@ -1,15 +1,25 @@
 import {BlockchainService} from './services/blockchain.service';
+import {Request, Response} from 'express';
 
 export class BlockchainHandler {
   constructor(private blockchainService: BlockchainService) {}
 
-  getBlockChain(req, res) {
+  getBlockChain(req: Request, res: Response) {
     const blockchainId = req.params.blockchainId;
     const blockchain = this.blockchainService.getAllBlocks(blockchainId);
     return res.send(JSON.stringify(blockchain));
   }
 
-  createBlockChain(req, res) {
+  getAllBlockchains(req: Request, res: Response) {
+    return res.send({chains: this.blockchainService.getAllBlockchainsIdentifiers()});
+  }
+
+  mineBlockchain(req: Request, res: Response) {
+    const blockchainId = req.params.blockchainId;
+    return res.send(this.blockchainService.selectChainToMine(blockchainId));
+  }
+
+  createBlockChain(req: Request, res: Response) {
     const name = req.body.name;
     if (!name) {
       return res.status(400).send({msg: 'A name must be set'});
