@@ -1,8 +1,1 @@
-# Objective build a blockchain plateform to support smart contract
-
-******* Left to do ************
-
-- Inject token principle
-
-
-
+# Goal: build a blockchain plateform that can be plug with IA to support smart contract
