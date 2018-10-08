@@ -15,7 +15,7 @@ export class BlockchainHandler {
   }
 
   mineBlockchain(req: Request, res: Response) {
-    const blockchainId = req.params.blockchainId;
+    const blockchainId = req.body.blockchainId;
     return res.send(this.blockchainService.selectChainToMine(blockchainId));
   }
 

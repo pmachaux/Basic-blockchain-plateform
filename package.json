@@ -5,8 +5,8 @@
   "scripts": {
     "start": "npm run build && npm run watch",
     "start-test-env": "nodemon test-env/app.js",
-    "build": "npm run build-ts && npm run tslint",
-    "serve": "nodemon dist/app.js",
+    "build": "npm run build-ts",
+    "serve": "nodemon --exec node --experimental-worker dist/app.js",
     "build-ts": "tsc",
     "prettier": "prettier \"src/**/*.{ts,html}\"",
     "watch-ts": "tsc -w",

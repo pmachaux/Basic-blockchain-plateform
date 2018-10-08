@@ -3,7 +3,7 @@ import {DataRecord} from '../../interfaces/data.interfaces';
 export class Block {
   constructor(
     public index: number,
-    public blockChainId: string,
+    public blockchainId: string,
     public timestamp: number,
     public data: DataRecord[],
     public hash: string,
@@ -12,7 +12,7 @@ export class Block {
     public nonce: number,
   ) {
     this.index = index;
-    this.blockChainId = blockChainId;
+    this.blockchainId = blockchainId;
     this.timestamp = timestamp;
     this.data = data;
     this.hash = hash.toString();

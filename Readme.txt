@@ -2,13 +2,7 @@
 
 ******* Left to do ************
 
-- Automatic mining
-    -> restore difficulty principle
-    -> Use web-worker
-    -> Stop when someone else find the block
-
-- Possibility to create another blockchain
-     -> Can choose which blockchain to validate (can validate all)
+- Fetch blockchains from other on start
 
 - Inject token principle
 
