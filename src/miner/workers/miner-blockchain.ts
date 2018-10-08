@@ -19,6 +19,6 @@ const newBlock = blockFactory.generateNextBlock(
 
 const result = {
     id: (workerData as Blockchain).id,
-    blocks: [...(workerData as Blockchain).blocks, ...[newBlock]],
+    block: newBlock,
 };
 parentPort.postMessage(result);

@@ -21,7 +21,14 @@ export class BlockValidityUtils {
         );
         const sortedKeys = blockKeys.sort();
         const completeKeys = [...sortedKeys, 'nonce'];
-        return completeKeys.map(x => (block[x] ? block[x].toString() : '')).join('');
+        return completeKeys
+            .map(x => {
+                if (x !== 'data') {
+                    return block[x] ? block[x].toString() : '';
+                }
+                return block.data.map(d => d.toString()).join();
+            })
+            .join('');
     }
 
     isDataValid(dataToCheck: DataRecord[], knownData: DataRecord[]): boolean {

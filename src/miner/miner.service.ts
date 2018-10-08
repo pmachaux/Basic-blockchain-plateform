@@ -1,5 +1,6 @@
 import {Blockchain} from '../blockchain/models/blockchain.model';
 import {StateManager} from '../state/state-manager';
+import {Block} from '../blockchain/models/block.model';
 const {Worker} = require('worker_threads');
 
 const workerName = './dist/miner/workers/miner-blockchain.js';
@@ -13,6 +14,7 @@ export class MinerService {
             if (data.id === this.idChainMined) {
                 if (!this.isWorkerDone) {
                     this.stopMining();
+                    console.log('mining restart');
                 }
                 this.initiateWorker(this.stateManager.getChain());
             }
@@ -24,9 +26,12 @@ export class MinerService {
         this.worker = new Worker(workerName, {
             workerData: chain,
         });
-        this.worker.on('message', (data: Pick<Blockchain, 'id' | 'blocks'>) => {
+        this.worker.on('message', (data: {id: string; block: Block}) => {
             this.isWorkerDone = true;
-            this.stateManager.setBlocksInChain(data.blocks, data.id);
+            console.log(
+                'block mined: index: ' + data.block.index + ' difficulty: ' + data.block.difficulty,
+            );
+            this.stateManager.pushNewBlockInChain(data.block, data.id);
         });
         this.worker.on('error', error => {
             this.stopMining();

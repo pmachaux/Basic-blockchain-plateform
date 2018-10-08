@@ -101,7 +101,20 @@ export class StateManager {
 
         const newBlocks = data.sort((a, b) => a.index - b.index).map(x => ({...x}));
         currentBlockchain.blocks = [...newBlocks];
+        this.withdrawData(newBlocks, blockchainId);
         blocksSubject.next({id, blocks: [...newBlocks]});
+    }
+
+    pushNewBlockInChain(block: Block, blockchainId?: string): void {
+        const id = blockchainId || state.idCurrentBlockchainMined;
+        const currentBlockchain = state.blockchains.find(x => x.id === id);
+
+        if (!currentBlockchain) {
+            return;
+        }
+        currentBlockchain.blocks = [...currentBlockchain.blocks, block];
+        this.withdrawData([block], blockchainId);
+        blocksSubject.next({id, blocks: [...currentBlockchain.blocks]});
     }
 
     onBlockChainChange(): Subject<Pick<Blockchain, 'id' | 'blocks'>> {
@@ -110,5 +123,15 @@ export class StateManager {
 
     onNewChain(): Subject<Blockchain> {
         return chainsSubject;
+    }
+
+    private withdrawData(blocks: Block[], chainId: string): void {
+        const dataByBlocks = blocks.map(x => x.data);
+        const dataToRemove = [].concat(...dataByBlocks);
+        const currentData = this.getData(chainId);
+        const filteredData = currentData.filter(
+            x => !dataToRemove.some(dataToWithdraw => dataToWithdraw.id === x.id),
+        );
+        this.setData(filteredData, chainId);
     }
 }

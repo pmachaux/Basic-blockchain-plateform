@@ -114,8 +114,13 @@ export class BlockchainService {
             latestBlockKnown,
         );
         if (isDataValid && isValidNewBlock) {
-            const blocks = [...this.stateManager.getBlocksFromChain(chainId), latestBlockReceived];
-            this.stateManager.setBlocksInChain(blocks, chainId);
+            console.log(
+                'new block accepted: index: ' +
+                    latestBlockReceived.index +
+                    ' difficulty: ' +
+                    latestBlockReceived.difficulty,
+            );
+            this.stateManager.pushNewBlockInChain(latestBlockReceived, chainId);
         }
     }
 
